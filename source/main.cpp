@@ -6,11 +6,37 @@
 #include <unistd.h>
 #include "sceAppInstUtil.h"
 
+typedef struct notify_request
+{
+    char useless1[45];
+    char message[3075];
+} notify_request_t;
+
+extern "C"
+{
+    int sceKernelSendNotificationRequest(int, notify_request_t *, size_t, int);
+}
+
+void notify(const char *fmt, ...)
+{
+    notify_request_t req;
+    va_list args;
+
+    bzero(&req, sizeof req);
+    va_start(args, fmt);
+    vsnprintf(req.message, sizeof req.message, fmt, args);
+    va_end(args);
+
+    sceKernelSendNotificationRequest(0, &req, sizeof req, 0);
+}
+
 int main()
 {
+	notify("In App");
+	
 	int ret = sceAppInstUtilInitialize();
 	if(ret){
-	   printf("sceAppInstUtilInitialize failed: 0x%08X\n", ret);
+		notify("sceAppInstUtilInitialize failed: 0x%08X\n", ret);
 	   return -1;
 	}
 	
@@ -39,11 +65,11 @@ int main()
 	
 	int num = sceAppInstUtilInstallByPackage(&in, &pkg_info, &arg3);
 	if (num == 0) {
-		puts("Download and Install console Task initiated");
+		notify("Download and Install console Task initiated");
 	} else {
-		printf("DPI: Install failed with error code %d\n", num);
+		notify("DPI: Install failed with error code %d\n", num);
 	}
-	float prog = 0;
+	/* float prog = 0;
 	SceAppInstallStatusInstalled status;
 	
 	while (strcmp(status.status, "playable") != 0) {
@@ -53,9 +79,9 @@ int main()
 			prog = ((float)status.downloaded_size / status.total_size) * 100.0f;
 		}
 	
-		printf("DPI: Status: %s | error: %d | progress %.2f%% (%llu/%llu)\n", 
+		notify("DPI: Status: %s | error: %d | progress %.2f%% (%llu/%llu)\n", 
 				   status.status, status.error_info.error_code, 
 				   prog, status.downloaded_size, status.total_size);
-	}
+	} */
 	return 0;
 }
